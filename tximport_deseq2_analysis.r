@@ -142,7 +142,11 @@ dev.off()
 
 ### There are 32 genes with padj < 0.1 between the full model and reduced w/o interaction term 
 
-## DE analysis 
+##############
+## DE analysis
+##############
+
+## Genotype
 res_geno <- results(ddsTxi2, contrast = c("geno","KO","WT"))
 res_geno <- na.omit(res_geno)  #drop NA rows
 res_geno_sig <- res_geno[res_geno$padj < 0.05 & res_geno$baseMean > 5.0,]
@@ -153,26 +157,29 @@ png("geno_DE_volcano.png", 1200, 1500, pointsize=20, res=100)
 volcanoplot(res_geno_ord, main = "Volcano Plot: DE genes across genotypes, KO vs. WT (Male responses)", lfcthresh=1.0, sigthresh=0.1, textcx=.6, xlim=c(-12, 12), ylim = c(3,25))
 dev.off()
 
-res <- results(ddsTxi2, contrast = c("diet","HFD","Chow"))
-res <- na.omit(res)  #drop NA rows
-res_sig <- res[res$padj < 0.05 & res$baseMean > 5.0,]
-res_ord <- res_sig[order(res_sig$padj),]
-res_ord$ext_gene <- anno[row.names(res_ord), "gene_name"]
+## Diet
+res_diet <- results(ddsTxi2, contrast = c("diet","HFD","Chow"))
+res_diet <- na.omit(res_diet)  #drop NA rows
+res_diet_sig <- res_diet[res_diet$padj < 0.05 & res_diet$baseMean > 5.0,]
+res_diet_ord <- res_diet_sig[order(res_diet_sig$padj),]
+res_diet_ord$ext_gene <- anno[row.names(res_diet_ord), "gene_name"]
 
-png("test.png", 1200, 1500, pointsize=20, res=100)
-volcanoplot(res_ord, main = "Volcano Plot: DE genes across diet, HDF vs. Chow", lfcthresh=1.0, sigthresh=0.1, textcx=.6, xlim=c(-10, 11), ylim = c(3,10))
+png("diet_DE_volcano.png", 1200, 1500, pointsize=20, res=100)
+volcanoplot(res_diet_ord, main = "Volcano Plot: DE genes across diet, HDF vs. Chow", lfcthresh=0.7, sigthresh=0.1, textcx=.7, xlim=c(-3, 5), ylim = c(3.5,10))
 dev.off()
 
-res <- results(ddsTxi2, contrast = c("sex","M","F"))
-res <- na.omit(res)  #drop NA rows
-res_sig <- res[res$padj < 0.05 & res$baseMean > 5.0,]
-res_ord <- res_sig[order(res_sig$padj),]
-res_ord$ext_gene <- anno[row.names(res_ord), "gene_name"]
+## Sex 
+res_sex <- results(ddsTxi2, contrast = c("sex","M","F"))
+res_sex <- na.omit(res_sex)  #drop NA rows
+res_sex_sig <- res_sex[res_sex$padj < 0.05 & res_sex$baseMean > 5.0,]
+res_sex_ord <- res_sex_sig[order(res_sex_sig$padj),]
+res_sex_ord$ext_gene <- anno[row.names(res_sex_ord), "gene_name"]
 
-png("test.png", 1200, 1500, pointsize=20, res=100)
-volcanoplot(res_ord, main = "Volcano Plot:", lfcthresh=1.0, sigthresh=0.1, textcx=.6, xlim=c(-10, 11), ylim = c(3,50))
+png("sex_DE_volcano.png", 1200, 1500, pointsize=20, res=100)
+volcanoplot(res_sex_ord, main = "Volcano Plot: DE genes across sex (M vs. F)", lfcthresh=1.0, sigthresh=0.1, textcx=.6, xlim=c(-10, 11), ylim = c(3,50))
 dev.off()
 
+## Genotype interaction with sex 
 res_geno_int <- results(ddsTxi2, name = "sexM.genoWT")
 res_geno_int <- na.omit(res_geno_int)  #drop NA rows
 res_geno_int_sig <- res_geno_int[res_geno_int$padj < 0.05 & res_geno_int$baseMean > 5.0,]
@@ -180,9 +187,20 @@ res_geno_int_ord <- res_geno_int_sig[order(res_geno_int_sig$padj),]
 res_geno_int_ord$ext_gene <- anno[row.names(res_geno_int_ord), "gene_name"]
 
 png("geno_sex_int.png", 1200, 1500, pointsize=20, res=100)
-volcanoplot(res_geno_int_ord, main = "Volcano Plot: Genes DE with Sex and Genotype", lfcthresh=0.7, sigthresh=0.2, textcx=.8, xlim=c(-6,6), ylim = c(4,8))
+volcanoplot(res_geno_int_ord, main = "Volcano Plot: DE across geno w/ gender interaction", lfcthresh=0.7, sigthresh=0.2, textcx=.8, xlim=c(-6,6), ylim = c(4,8))
 dev.off()
 
+#### DEG plots
+degPlot(dds = ddsTxi2, res = res_diet_ord, n = 9, xs = "diet", group = "sex", ann = "ext_gene")
+degPlot(dds = ddsTxi2, res = res_geno_ord, n = 9, xs = "geno", group = "sex")
+degPlot(dds = ddsTxi2, res = res_sex_ord, n = 9, xs = "sex")
+degPlot(ddsTxi2, res_geno_int_ord, n = 9, xs = "geno", group = "sex")
+
+##
+res_geno_ashr <- lfcShrink(ddsTxi2, coef = 6, type = 'ashr')
+res_diet_ashr <- lfcShrink(ddsTxi2, coef = 5, type = 'ashr')
+
+plotMA(res_geno_ashr)
 ## write results 
 
 my_cols <- c("baseMean","log2FoldChange","padj","ext_gene")
