@@ -204,9 +204,65 @@ plotMA(res_geno_ashr)
 ## write results 
 
 my_cols <- c("baseMean","log2FoldChange","padj","ext_gene")
-write.csv(x = res_c18_ord[,my_cols], file = "DE_genes_C18_DMSO_padj_0p05.csv")
-write.csv(x = res_vx809_ord[,my_cols], file = "DE_genes_vx809_padj_0p05.csv")
-write.csv(x = res_vx661_ord[,my_cols], file = "DE_genes_vx661_padj_0p05.csv")
-write.csv(x = res_saler_ord[,my_cols], file = "DE_genes_salermide_padj_0p05.csv")
+write.csv(x = res_sex_ord[,my_cols], file = "DE_genes_gender_padj_0p05.csv")
+write.csv(x = res_diet_ord[,my_cols], file = "DE_genes_diet_padj_0p05.csv")
+write.csv(x = res_geno_ord[,my_cols], file = "DE_genes_geno_padj_0p05.csv")
+write.csv(x = res_geno_int_ord[,my_cols], file = "DE_genes_geno_interact_padj_0p05.csv")
+
+##################
+## Diet and Sex interaction using factor paste method (rec by DESeq2 Vignette)
+##################
+
+samples$sexdiet <- paste0(samples$sex, samples$diet)
+
+ddsTxi3 <- DESeqDataSetFromTximport(txi,
+                                   colData = samples,
+                                   design = ~ batch + geno + sexdiet)
+
+ddsTxi3 <- ddsTxi3[ rowSums(counts(ddsTxi3)) > 5, ]
+ddsTxi3 <- DESeq(ddsTxi3)
+
+res_fem_hfd <- results(ddsTxi3, contrast = c("sexdiet", "FHFD", "FChow"))
+res_fem_hfd <- na.omit(res_fem_hfd)  #drop NA rows
+res_fem_hfd_sig <- res_fem_hfd[res_fem_hfd$padj < 0.05 & res_fem_hfd$baseMean > 5.0 & abs(res_fem_hfd$log2FoldChange < 10), ]
+res_fem_hfd_ord <- res_fem_hfd_sig[order(res_fem_hfd_sig$padj),]
+res_fem_hfd_ord$ext_gene <- anno[row.names(res_fem_hfd_ord), "gene_name"]
+
+png("volcano_female_HFD_v_chow.png", 1200, 1500, pointsize=20, res=100)
+volcanoplot(res_fem_hfd_ord, main = "DE genes female HFD vs. Chow, log2FC > 1.5, padj < 0.01", 
+            lfcthresh=1.5, sigthresh=0.01, textcx=.5, xlim=c(-5,5), ylim = c(2,25))
+dev.off()
+
+res_male_hfd <- results(ddsTxi3, contrast = c("sexdiet", "MHFD", "MChow"))
+res_male_hfd <- na.omit(res_male_hfd)  #drop NA rows
+res_male_hfd_sig <- res_male_hfd[res_male_hfd$padj < 0.05 & res_male_hfd$baseMean > 5.0 & abs(res_male_hfd$log2FoldChange) < 10, ]
+res_male_hfd_ord <- res_male_hfd_sig[order(res_male_hfd_sig$padj),]
+res_male_hfd_ord$ext_gene <- anno[row.names(res_male_hfd_ord), "gene_name"]
+
+png("volcano_male_HDF_v_chow.png", 1200, 1500, pointsize=20, res=100)
+volcanoplot(res_male_hfd_ord, main = "DE genes male HFD vs. Chow; log2FC > 1.0, padj <0.05", 
+            lfcthresh=1.0, sigthresh=0.05, textcx=.5, xlim=c(-4,4), ylim = c(2,15))
+dev.off()
+
+
+write.csv(x = res_fem_hfd_ord[,my_cols], file = 'DE_genes_fem_HFD_vs_Chow_padj_p05.csv')
+write.csv(x = res_male_hfd_ord[,my_cols], file = 'DE_genes_male_HFD_vs_Chow_padj_p05.csv')
+
+##
+degPlot(ddsTxi3, res = res_fem_hfd, xs = 'sexdiet', n=6)
+degPlot(ddsTxi3, res = res_male_hfd, xs = 'sexdiet', n=6)
+
+
+##################
+## Diet and Genotype interaction using factor paste method 
+##################
+
+samples$genodiet <- paste0(samples$geno, samples$diet)
+ddsTxi4 <- DESeqDataSetFromTximport(txi,
+                                    colData = samples,
+                                    design = ~ batch + sex + genodiet)
+
+ddsTxi4 <- ddsTxi4[ rowSums(counts(ddsTxi4)) > 5, ]
+ddsTxi4 <- DESeq(ddsTxi4)
 
 
