@@ -265,4 +265,66 @@ ddsTxi4 <- DESeqDataSetFromTximport(txi,
 ddsTxi4 <- ddsTxi4[ rowSums(counts(ddsTxi4)) > 5, ]
 ddsTxi4 <- DESeq(ddsTxi4)
 
+res_ko_hfd <- results(ddsTxi4, contrast = c("genodiet", "KOHFD", "KOChow"))
+res_ko_hfd <- na.omit(res_ko_hfd)  #drop NA rows
+res_ko_hfd_sig <- res_ko_hfd[res_ko_hfd$padj < 0.1 & res_ko_hfd$baseMean > 5.0 & abs(res_ko_hfd$log2FoldChange) < 10, ]
+res_ko_hfd_ord <- res_ko_hfd_sig[order(res_ko_hfd_sig$padj),]
+res_ko_hfd_ord$ext_gene <- anno[row.names(res_ko_hfd_ord), "gene_name"]
+
+png("volcano_ko_HFD_v_chow.png", 1200, 1500, pointsize=20, res=100)
+volcanoplot(res_ko_hfd_ord, main = "DE genes Trim62 knockout HFD vs. Chow; log2FC > 0.75 padj <0.1", 
+            lfcthresh=0.75, sigthresh=0.1, textcx=.5, xlim=c(-3,3), ylim = c(3,10))
+dev.off()
+
+res_wt_hfd <- results(ddsTxi4, contrast = c("genodiet", "WTHFD", "WTChow"))
+res_wt_hfd <- na.omit(res_wt_hfd)  #drop NA rows
+res_wt_hfd_sig <- res_wt_hfd[res_wt_hfd$padj < 0.1 & res_wt_hfd$baseMean > 5.0 & abs(res_wt_hfd$log2FoldChange) < 10, ]
+res_wt_hfd_ord <- res_wt_hfd_sig[order(res_wt_hfd_sig$padj),]
+res_wt_hfd_ord$ext_gene <- anno[row.names(res_wt_hfd_ord), "gene_name"]
+
+png("volcano_wt_HFD_v_chow.png", 1200, 1500, pointsize=20, res=100)
+volcanoplot(res_wt_hfd_ord, main = "DE genes wild-type Trim62 HFD vs. Chow; log2FC > 0.75, padj <0.1", 
+            lfcthresh=0.75, sigthresh=0.1, textcx=.5, xlim=c(-3,3), ylim = c(3,5))
+dev.off()
+
+write.csv(x = res_ko_hfd_ord[,my_cols], file = "DE_genes_knockout_HFD_vs_Chow_padj_0p1.csv")
+write.csv(x = res_wt_hfd_ord[,my_cols], file = "DE_genes_wildtype_HFD_vs_Chow_padj_0p1.csv")
+
+
+#################
+## Splitting out the males and females: Andrea wants everything contrasted within males only and females only 
+## diet and geno interactions by male/female 
+#################
+
+#samples$genodiet <- paste0(samples$geno, samples$diet)
+#ddsTxi4 <- DESeqDataSetFromTximport(txi,
+#                                    colData = samples,
+#                                    design = ~ batch + sex + genodiet)
+
+ddsTxiF <- ddsTxi4[ , ddsTxi4$sex == 'F']
+ddsTxiF$sex <- droplevels(ddsTxiF$sex)
+design(ddsTxiF) <- ~batch + genodiet
+ddsTxiF <- ddsTxiF[ rowSums(counts(ddsTxiF)) > 5, ]
+ddsTxiF <- DESeq(ddsTxiF)
+
+ddsTxiM <- ddsTxi4[ , ddsTxi4$sex == 'M']
+ddsTxiM$sex <- droplevels(ddsTxiM$sex)
+design(ddsTxiM) <- ~batch + genodiet
+ddsTxiM <- ddsTxiM[ rowSums(counts(ddsTxiM)) > 5, ]
+ddsTxiM <- DESeq(ddsTxiM)
+
+
+##Females
+
+res_wt_hfd <- results(ddsTxiF, contrast = c("genodiet", "WTHFD", "WTChow"))
+res_wt_hfd <- na.omit(res_wt_hfd)  #drop NA rows
+res_wt_hfd_sig <- res_wt_hfd[res_wt_hfd$padj < 0.1 & res_wt_hfd$baseMean > 5.0 & abs(res_wt_hfd$log2FoldChange) < 10, ]
+res_wt_hfd_ord <- res_wt_hfd_sig[order(res_wt_hfd_sig$padj),]
+res_wt_hfd_ord$ext_gene <- anno[row.names(res_wt_hfd_ord), "gene_name"]
+
+res_ko_hfd <- results(ddsTxiF, contrast = c("genodiet", "KOHFD", "KOChow"))
+res_ko_hfd <- na.omit(res_ko_hfd)  #drop NA rows
+res_ko_hfd_sig <- res_ko_hfd[res_ko_hfd$padj < 0.1 & res_ko_hfd$baseMean > 5.0 & abs(res_ko_hfd$log2FoldChange) < 10, ]
+res_ko_hfd_ord <- res_ko_hfd_sig[order(res_ko_hfd_sig$padj),]
+res_ko_hfd_ord$ext_gene <- anno[row.names(res_ko_hfd_ord), "gene_name"]
 
